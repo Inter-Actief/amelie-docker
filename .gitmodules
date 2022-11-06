@@ -1,0 +1,3 @@
+[submodule "amelie-backend"]
+	path = amelie-backend
+	url = git@github.com:Inter-Actief/amelie.git

@@ -1,0 +1,56 @@
+version: '2'
+services:
+  amelie-rabbitmq:
+    image: rabbitmq:latest
+    container_name: amelie-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: amelie
+      RABBITMQ_DEFAULT_PASS: amelie
+      RABBITMQ_DEFAULT_VHOST: amelie
+
+  amelie-django:
+    build: 
+      context: .
+      dockerfile: amelie-django/Dockerfile
+    container_name: amelie-django
+    user: "1000:1000"
+    depends_on:
+      - amelie-rabbitmq
+    links:
+      - "amelie-rabbitmq:rabbitmq"
+    volumes:
+      - ./static:/amelie/static
+      - ./media:/media
+      - ./photo_upload:/photo_upload
+      - ./config/amelie:/config:ro
+  
+  amelie-celery:
+    build: 
+      context: .
+      dockerfile: amelie-celery/Dockerfile
+    container_name: amelie-celery
+    user: "1000:1000"
+    depends_on:
+      - amelie-rabbitmq
+    links:
+      - "amelie-rabbitmq:rabbitmq"
+    volumes:
+      - ./media:/media
+      - ./photo_upload:/photo_upload
+      - ./config/amelie:/config:ro
+    environment:
+      - C_FORCE_ROOT=true
+
+  amelie-nginx: 
+    image: nginx:latest
+    container_name: amelie-nginx
+    depends_on:
+      - amelie-django
+    links:
+      - "amelie-django:django"
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d:ro
+      - ./static:/amelie/static:ro
+      - ./media:/amelie/media:ro
+    ports:
+      - 80:80
